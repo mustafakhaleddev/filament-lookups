@@ -157,6 +157,23 @@ class ManageLookups extends Page implements Tables\Contracts\HasTable
         return $query;
     }
 
+    protected function valuesCountForType(LookupType $type): int
+    {
+        $query = LookupValue::where('lookup_type_id', $type->id);
+
+        if ($this->isTenancyEnabled()) {
+            $tenantId = $this->resolveTenantId();
+
+            if ($tenantId) {
+                $query->forTenant($tenantId);
+            } else {
+                $query->shared();
+            }
+        }
+
+        return $query->count();
+    }
+
     protected function isTenancyEnabled(): bool
     {
         return $this->getLookupService()->isTenancyEnabled();
@@ -205,7 +222,7 @@ class ManageLookups extends Page implements Tables\Contracts\HasTable
                     ->url(static::getUrl(['type' => $type->slug]))
                     ->isActiveWhen(fn (): bool => $this->selectedType?->id === $type->id)
                     ->icon($type->is_hierarchical ? Heroicon::OutlinedFolderOpen : Heroicon::OutlinedListBullet)
-                    ->badge($type->values()->count());
+                    ->badge($this->valuesCountForType($type));
             })
             ->all();
     }
