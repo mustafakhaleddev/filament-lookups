@@ -5,6 +5,7 @@ namespace Wezlo\FilamentLookups\Forms\Components;
 use Closure;
 use Filament\Forms\Components\Select;
 use Filament\Schemas\Components\Utilities\Get;
+use Wezlo\FilamentLookups\Lookup;
 use Wezlo\FilamentLookups\Services\LookupService;
 
 class LookupSelect extends Select
@@ -15,9 +16,18 @@ class LookupSelect extends Select
 
     protected bool|Closure $hierarchicalDisplay = true;
 
-    public function lookupType(string|Closure $slug): static
+    /**
+     * Set the lookup type by class or slug.
+     *
+     * @param  class-string<Lookup>|string|Closure  $type
+     */
+    public function lookupType(string|Closure $type): static
     {
-        $this->lookupTypeSlug = $slug;
+        if (is_string($type) && is_subclass_of($type, Lookup::class)) {
+            $this->lookupTypeSlug = (new $type)->slug();
+        } else {
+            $this->lookupTypeSlug = $type;
+        }
 
         return $this;
     }
