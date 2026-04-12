@@ -24,6 +24,7 @@ use Wezlo\FilamentLookups\Lookup;
 use Wezlo\FilamentLookups\Models\LookupType;
 use Wezlo\FilamentLookups\Models\LookupValue;
 use Wezlo\FilamentLookups\Services\LookupRegistry;
+use Wezlo\FilamentLookups\Services\LookupService;
 
 class ManageLookups extends Page implements Tables\Contracts\HasTable
 {
@@ -76,7 +77,7 @@ class ManageLookups extends Page implements Tables\Contracts\HasTable
     public function mount(?string $type = null): void
     {
         if ($type) {
-            $this->selectedType = LookupType::where('slug', $type)->where('is_active', true)->first();
+            $this->selectedType = $this->typesQuery()->where('slug', $type)->first();
         }
 
         if (! $this->selectedType) {
@@ -111,10 +112,65 @@ class ManageLookups extends Page implements Tables\Contracts\HasTable
         return app(LookupRegistry::class);
     }
 
+    protected function getLookupService(): LookupService
+    {
+        return app(LookupService::class);
+    }
+
+    /**
+     * Base query for lookup types, scoped by tenant when enabled.
+     */
+    protected function typesQuery(): Builder
+    {
+        $query = LookupType::where('is_active', true);
+
+        if ($this->isTenancyEnabled()) {
+            $tenantId = $this->resolveTenantId();
+
+            if ($tenantId) {
+                $query->forTenant($tenantId);
+            } else {
+                $query->shared();
+            }
+        }
+
+        return $query;
+    }
+
+    /**
+     * Base query for lookup values, scoped by tenant when enabled.
+     */
+    protected function valuesQuery(): Builder
+    {
+        $query = LookupValue::where('lookup_type_id', $this->selectedType->id);
+
+        if ($this->isTenancyEnabled() && $this->selectedType) {
+            $tenantId = $this->resolveTenantId();
+
+            if ($tenantId) {
+                $query->forTenant($tenantId);
+            } else {
+                $query->shared();
+            }
+        }
+
+        return $query;
+    }
+
+    protected function isTenancyEnabled(): bool
+    {
+        return $this->getLookupService()->isTenancyEnabled();
+    }
+
+    protected function resolveTenantId(): ?string
+    {
+        return $this->getLookupService()->resolveTenantId();
+    }
+
     protected function getFirstViewableType(): ?LookupType
     {
         $registry = $this->getRegistry();
-        $types = LookupType::where('is_active', true)->orderBy('sort_order')->get();
+        $types = $this->typesQuery()->orderBy('sort_order')->get();
 
         foreach ($types as $type) {
             $lookup = $registry->resolveForType($type);
@@ -132,7 +188,7 @@ class ManageLookups extends Page implements Tables\Contracts\HasTable
      */
     public function getSubNavigation(): array
     {
-        $types = LookupType::where('is_active', true)->orderBy('sort_order')->orderBy('name')->get();
+        $types = $this->typesQuery()->orderBy('sort_order')->orderBy('name')->get();
         $registry = $this->getRegistry();
 
         return $types
@@ -160,7 +216,7 @@ class ManageLookups extends Page implements Tables\Contracts\HasTable
 
         return $table
             ->query(fn (): Builder => $this->selectedType
-                ? LookupValue::where('lookup_type_id', $this->selectedType->id)
+                ? $this->valuesQuery()
                 : LookupValue::whereRaw('1 = 0'))
             ->defaultSort('sort_order')
             ->reorderable($lookup?->canReorder() !== false ? 'sort_order' : null)
@@ -196,6 +252,11 @@ class ManageLookups extends Page implements Tables\Contracts\HasTable
                     ->form($this->getValueFormSchema())
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['lookup_type_id'] = $this->selectedType->id;
+
+                        if ($this->isTenancyEnabled()) {
+                            $column = config('filament-lookups.tenancy.tenant_id_column', 'tenant_id');
+                            $data[$column] = $this->resolveTenantId();
+                        }
 
                         return $data;
                     })
