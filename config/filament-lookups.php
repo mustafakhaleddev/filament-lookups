@@ -55,6 +55,7 @@ return [
         'enabled' => false,
         'tenant_model' => null,
         'tenant_id_column' => 'tenant_id',
+
     ],
 
     /*

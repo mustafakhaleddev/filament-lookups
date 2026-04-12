@@ -2,6 +2,7 @@
 
 namespace Wezlo\FilamentLookups;
 
+use Closure;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 use Wezlo\FilamentLookups\Pages\ManageLookups;
@@ -13,6 +14,8 @@ class FilamentLookupsPlugin implements Plugin
     protected ?bool $tenancyEnabled = null;
 
     protected ?string $tenantModel = null;
+
+    protected ?Closure $tenantResolver = null;
 
     protected ?string $navigationGroup = null;
 
@@ -49,6 +52,24 @@ class FilamentLookupsPlugin implements Plugin
         $this->tenantModel = $model;
 
         return $this;
+    }
+
+    /**
+     * Set a custom resolver for the current tenant ID.
+     *
+     * Usage:
+     *   ->tenantResolver(fn () => auth()->user()?->company_id)
+     */
+    public function tenantResolver(Closure $resolver): static
+    {
+        $this->tenantResolver = $resolver;
+
+        return $this;
+    }
+
+    public function getTenantResolver(): ?Closure
+    {
+        return $this->tenantResolver;
     }
 
     public function navigationGroup(?string $group): static

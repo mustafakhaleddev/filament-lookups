@@ -4,6 +4,7 @@ namespace Wezlo\FilamentLookups\Services;
 
 use Illuminate\Support\Collection;
 use Wezlo\FilamentLookups\Enums\TenancyMode;
+use Wezlo\FilamentLookups\FilamentLookupsPlugin;
 use Wezlo\FilamentLookups\Models\LookupType;
 use Wezlo\FilamentLookups\Models\LookupValue;
 
@@ -121,7 +122,8 @@ class LookupService
     }
 
     /**
-     * Resolve the current tenant ID from the Filament panel context.
+     * Resolve the current tenant ID using the plugin's resolver,
+     * falling back to Filament's built-in tenancy.
      */
     public function resolveTenantId(): ?string
     {
@@ -129,10 +131,16 @@ class LookupService
             return null;
         }
 
-        try {
-            $tenant = filament()->getTenant();
+        $plugin = FilamentLookupsPlugin::current();
+        $resolver = $plugin?->getTenantResolver();
 
-            return $tenant?->getKey();
+        if ($resolver) {
+            return $resolver();
+        }
+
+        // Fallback: Filament built-in tenancy
+        try {
+            return filament()->getTenant()?->getKey();
         } catch (\Throwable) {
             return null;
         }
