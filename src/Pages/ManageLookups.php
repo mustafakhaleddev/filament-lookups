@@ -282,9 +282,9 @@ class ManageLookups extends Page implements Tables\Contracts\HasTable
             ->recordActions([
                 EditAction::make()
                     ->form($this->getValueFormSchema())
-                    ->visible(fn (): bool => $lookup?->canEdit() ?? true),
+                    ->visible(fn (LookupValue $record): bool => $lookup?->canEdit($record) ?? true),
                 DeleteAction::make()
-                    ->visible(fn (): bool => $lookup?->canDelete() ?? true),
+                    ->visible(fn (LookupValue $record): bool => $lookup?->canDelete($record) ?? true),
             ]);
     }
 

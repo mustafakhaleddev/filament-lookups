@@ -63,6 +63,7 @@ class MakeLookupCommand extends Command
 
 namespace {$namespace};
 
+use Illuminate\Database\Eloquent\Model;
 use Wezlo\FilamentLookups\Lookup;
 
 class {$name} extends Lookup
@@ -87,12 +88,12 @@ class {$name} extends Lookup
         return true;
     }
 
-    public function canEdit(): bool
+    public function canEdit(?Model \$record = null): bool
     {
         return true;
     }
 
-    public function canDelete(): bool
+    public function canDelete(?Model \$record = null): bool
     {
         return true;
     }

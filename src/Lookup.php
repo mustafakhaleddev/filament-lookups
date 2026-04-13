@@ -2,6 +2,7 @@
 
 namespace Wezlo\FilamentLookups;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 abstract class Lookup
@@ -36,7 +37,7 @@ abstract class Lookup
         return 0;
     }
 
-    public function canView(): bool
+    public function canView(?Model $record = null): bool
     {
         return true;
     }
@@ -46,12 +47,12 @@ abstract class Lookup
         return true;
     }
 
-    public function canEdit(): bool
+    public function canEdit(?Model $record = null): bool
     {
         return true;
     }
 
-    public function canDelete(): bool
+    public function canDelete(?Model $record = null): bool
     {
         return true;
     }

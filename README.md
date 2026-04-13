@@ -42,6 +42,7 @@ This creates a class in `app/Lookups/`:
 ```php
 namespace App\Lookups;
 
+use Illuminate\Database\Eloquent\Model;
 use Wezlo\FilamentLookups\Lookup;
 
 class Countries extends Lookup
@@ -66,12 +67,12 @@ class Countries extends Lookup
         return true;
     }
 
-    public function canEdit(): bool
+    public function canEdit(?Model $record = null): bool
     {
         return true;
     }
 
-    public function canDelete(): bool
+    public function canDelete(?Model $record = null): bool
     {
         return false; // protect country values from deletion
     }
@@ -106,9 +107,36 @@ The plugin registers a **Lookups** page with a sidebar listing all synced types.
 | `tenancyMode()` | `'shared'` | `'shared'`, `'tenant'`, or `'both'` |
 | `sortOrder()` | `0` | Navigation sort order |
 | `canAdd()` | `true` | Show/hide create button |
-| `canEdit()` | `true` | Show/hide edit action |
-| `canDelete()` | `true` | Show/hide delete action |
+| `canEdit(?Model $record = null)` | `true` | Show/hide edit action per record |
+| `canDelete(?Model $record = null)` | `true` | Show/hide delete action per record |
+| `canView(?Model $record = null)` | `true` | Show/hide lookup type visibility |
 | `canReorder()` | `true` | Enable drag-to-reorder |
+
+## Per-Record Permissions
+
+The `canEdit()`, `canDelete()`, and `canView()` methods receive the current record, allowing conditional logic per row:
+
+```php
+use Illuminate\Database\Eloquent\Model;
+use Wezlo\FilamentLookups\Lookup;
+
+class OrderStatus extends Lookup
+{
+    public function canEdit(?Model $record = null): bool
+    {
+        // prevent editing system-defined statuses
+        return ! $record?->metadata['is_system'];
+    }
+
+    public function canDelete(?Model $record = null): bool
+    {
+        // only allow deleting statuses that are not in use
+        return $record?->orders()->doesntExist() ?? true;
+    }
+}
+```
+
+When called without a record (e.g. for navigation visibility), `$record` is `null` — the default `true` applies.
 
 ## Using `LookupSelect` in Forms
 
