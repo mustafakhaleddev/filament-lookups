@@ -77,7 +77,7 @@ class LookupSelect extends Select
             if ($parentFieldName) {
                 $parentValue = $get($parentFieldName);
 
-                return $service->getOptionsForDependentSelect($slug, $parentValue, $tenantId, $onlyParents);
+                return $service->getOptionsForDependentSelect($slug, $parentValue, $tenantId);
             }
 
             return $service->getOptionsForSelect(

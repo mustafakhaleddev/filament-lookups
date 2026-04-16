@@ -17,7 +17,7 @@ class LookupService
     {
         $type = $this->resolveType($slugOrId);
 
-        if (! $type) {
+        if (!$type) {
             return collect();
         }
 
@@ -33,7 +33,7 @@ class LookupService
     {
         $type = $this->resolveType($slugOrId);
 
-        if (! $type) {
+        if (!$type) {
             return collect();
         }
 
@@ -61,9 +61,9 @@ class LookupService
      */
     public function getOptionsForSelect(string $slug, ?string $tenantId = null, bool $hierarchical = true, ?bool $onlyParents = false): array
     {
-        $type = $this->resolveType($slug, $onlyParents);
+        $type = $this->resolveType($slug);
 
-        if (! $type) {
+        if (!$type) {
             return [];
         }
 
@@ -76,6 +76,10 @@ class LookupService
                 ->orderBy('name');
 
             $rootValues = $this->applyTenancyScope($rootValues, $type, $tenantId)->get();
+
+            if ($onlyParents) {
+                return $rootValues->pluck('name', 'id')->all();
+            }
 
             return $this->buildHierarchicalOptions($rootValues);
         }
@@ -91,15 +95,15 @@ class LookupService
      *
      * @return array<string, string>
      */
-    public function getOptionsForDependentSelect(string $slug, ?string $parentValueId, ?string $tenantId = null, ?bool $onlyParents = false): array
+    public function getOptionsForDependentSelect(string $slug, ?string $parentValueId, ?string $tenantId = null): array
     {
-        if (! $parentValueId) {
+        if (!$parentValueId) {
             return [];
         }
 
-        $type = $this->resolveType($slug, $onlyParents);
+        $type = $this->resolveType($slug);
 
-        if (! $type) {
+        if (!$type) {
             return [];
         }
 
@@ -127,7 +131,7 @@ class LookupService
      */
     public function resolveTenantId(): ?string
     {
-        if (! $this->isTenancyEnabled()) {
+        if (!$this->isTenancyEnabled()) {
             return null;
         }
 
@@ -148,15 +152,12 @@ class LookupService
 
     public function isTenancyEnabled(): bool
     {
-        return (bool) config('filament-lookups.tenancy.enabled', false);
+        return (bool)config('filament-lookups.tenancy.enabled', false);
     }
 
-    protected function resolveType(string $slug, ?bool $onlyParents = false): ?LookupType
+    protected function resolveType(string $slug): ?LookupType
     {
         return LookupType::where('slug', $slug)
-            ->when($onlyParents, function ($q) {
-                return $q->whereNull('parent_id');
-            })
             ->where('is_active', true)
             ->first();
     }
@@ -166,7 +167,7 @@ class LookupService
      */
     protected function applyTenancyScope(mixed $query, LookupType $type, ?string $tenantId): mixed
     {
-        if (! $this->isTenancyEnabled() || ! $tenantId) {
+        if (!$this->isTenancyEnabled() || !$tenantId) {
             return $query;
         }
 
