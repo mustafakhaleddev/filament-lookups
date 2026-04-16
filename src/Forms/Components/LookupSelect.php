@@ -15,6 +15,7 @@ class LookupSelect extends Select
     protected string|Closure|null $parentFieldName = null;
 
     protected bool|Closure $hierarchicalDisplay = true;
+    protected bool|Closure $onlyParents = false;
 
     /**
      * Set the lookup type by class or slug.
@@ -46,6 +47,13 @@ class LookupSelect extends Select
         return $this;
     }
 
+    public function onlyParents(bool|Closure $condition = true): static
+    {
+        $this->onlyParents = $condition;
+
+        return $this;
+    }
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -64,16 +72,19 @@ class LookupSelect extends Select
 
             $parentFieldName = $this->evaluate($this->parentFieldName);
 
+            $onlyParents = $this->evaluate($this->onlyParents);
+
             if ($parentFieldName) {
                 $parentValue = $get($parentFieldName);
 
-                return $service->getOptionsForDependentSelect($slug, $parentValue, $tenantId);
+                return $service->getOptionsForDependentSelect($slug, $parentValue, $tenantId, $onlyParents);
             }
 
             return $service->getOptionsForSelect(
                 $slug,
                 $tenantId,
                 $this->evaluate($this->hierarchicalDisplay),
+                $onlyParents
             );
         });
 

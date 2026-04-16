@@ -59,9 +59,9 @@ class LookupService
      *
      * @return array<string, string>
      */
-    public function getOptionsForSelect(string $slugOrId, ?string $tenantId = null, bool $hierarchical = true): array
+    public function getOptionsForSelect(string $slug, ?string $tenantId = null, bool $hierarchical = true, ?bool $onlyParents = false): array
     {
-        $type = $this->resolveType($slugOrId);
+        $type = $this->resolveType($slug, $onlyParents);
 
         if (! $type) {
             return [];
@@ -91,13 +91,13 @@ class LookupService
      *
      * @return array<string, string>
      */
-    public function getOptionsForDependentSelect(string $slugOrId, ?string $parentValueId, ?string $tenantId = null): array
+    public function getOptionsForDependentSelect(string $slug, ?string $parentValueId, ?string $tenantId = null, ?bool $onlyParents = false): array
     {
         if (! $parentValueId) {
             return [];
         }
 
-        $type = $this->resolveType($slugOrId);
+        $type = $this->resolveType($slug, $onlyParents);
 
         if (! $type) {
             return [];
@@ -151,10 +151,12 @@ class LookupService
         return (bool) config('filament-lookups.tenancy.enabled', false);
     }
 
-    protected function resolveType(string $slugOrId): ?LookupType
+    protected function resolveType(string $slug, ?bool $onlyParents = false): ?LookupType
     {
-        return LookupType::where('slug', $slugOrId)
-            ->orWhere('id', $slugOrId)
+        return LookupType::where('slug', $slug)
+            ->when($onlyParents, function ($q) {
+                return $q->whereNull('parent_id');
+            })
             ->where('is_active', true)
             ->first();
     }
