@@ -21,7 +21,6 @@ class FilamentLookupsServiceProvider extends PackageServiceProvider
                 'create_lookup_types_table',
                 'create_lookup_values_table',
             ])
-            ->runsMigrations()
             ->hasTranslations()
             ->hasViews()
             ->hasCommands([
